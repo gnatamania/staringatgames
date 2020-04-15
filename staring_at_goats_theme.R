@@ -1,4 +1,3 @@
-library(googlesheets4)
 library(ggplot2)
 library(scales)
 
