@@ -32,7 +32,7 @@ netmarketshare_data = read_sheet(data_sheet,
 # join and use in ggplot.
 
 newzoo_clean = newzoo_data %>% 
-  transmute(year = Year,
+  transmute(year = as.Date(paste0(Year,"-01-01")),
             pc_market = `PC Market (excluding browser games)`,
             total_market = `Total Market`,
             gamers = Gamers,
@@ -40,9 +40,10 @@ newzoo_clean = newzoo_data %>%
             pc_gamers = gamers*0.52) %>% 
   pivot_longer(-year)
 
+
 steam_hardware_clean = steam_hardware_data %>% 
   mutate(Month = as.Date(ifelse(month(Month)> 6, as.Date(Month + years(1)), as.Date(Month) ))) %>% 
-  transmute(year = format(Month, "%Y"),
+  transmute(year = as.Date(paste0(format(Month, "%Y"), "-01-01")),
             windows = `Microsoft Windows`,
             mac = `Mac OS`,
             linux = Linux,
@@ -51,7 +52,7 @@ steam_hardware_clean = steam_hardware_data %>%
   mutate(data_source = "steam")
 
 stack_overflow_clean = stack_overflow_data %>% 
-  transmute(year = Year,
+  transmute(year = as.Date(paste0(Year,"-01-01")),
             windows = `Windows Share`,
             mac = `Mac Share`,
             linux = `Linux Share`,
@@ -65,7 +66,7 @@ netmarketshare_clean = netmarketshare_data %>%
                                  Platform == "Linux" ~ "linux",
                                  TRUE ~ "other"
                                   ),
-            year = Year,
+            year = as.Date(paste0(Year,"-01-01")),
             share=Share/100) %>% 
   group_by(year,platform) %>% 
   summarise(share=sum(share)) %>% 
@@ -76,16 +77,13 @@ netmarketshare_clean = netmarketshare_data %>%
 # Create main data frame ------------------------------
 platform_share = steam_hardware_clean %>% 
   union_all(stack_overflow_clean) %>% 
+  union_all(netmarketshare_clean)
   
-
-
-
- %>% 
-  ggplot(aes(y=Share, x=Year, colour=platform_group)) +
-  geom_line(size=1.2)+ 
-  guides(colour = guide_legend(override.aes = list(size=4),
-                               label.hjust = 0.5)) + 
-  staring_at_games_theme
+platform_share %>% 
+  ggplot(aes(y=share, x=year, colour=platform)) +
+  geom_line(size=1.2)+
+  staring_at_games_theme %>% 
+  facet_wrap(. ~ data_source)
 
 
 
